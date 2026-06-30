@@ -1,9 +1,9 @@
 ---
 id: db-gap-analysis
-title: Analisis Database — Mangkasir (mpos) vs Eqiozmart (target)
-type: data
-parent: 03_Data
-tags: [database, erd, gap-analysis, user-flow, mpos]
+title: DB Gap Analysis Mangkasir vs Eqiozmart
+type: database
+parent: data-physical
+tags: database, gap-analysis, mpos
 version: 1.0
 ---
 
@@ -310,10 +310,39 @@ Dengan menutup poin 1–3, klon Eqiozmart sudah **setara fungsional** dengan jan
 
 ---
 
+## Summary
+
+Penilaian apakah database Mangkasir (`mpos`+`mpos_transaction`) memenuhi kebutuhan Eqiozmart. Verdict: **memenuhi sebagian (~60%)** — POS inti solid, tetapi modul Purchase, lapisan tenant Business, dan RBAC belum ada. Hasil lengkap diteruskan ke [Database Design Eqiozmart v1](DATABASE_DESIGN_Eqiozmart_v1.md).
+
+## Related Domains
+
+- Identity, Organization, Product, CRM, Purchase, Inventory, Sales, Finance — lihat [Bounded Context](../02_Architecture/04_Bounded_Context_And_Domain_Model.md).
+
+## Related Processes
+
+- Penjualan, Pembelian, Manajemen Kas — lihat [Business Process Mapping](../01_Business/03_Business_Process_Mapping.md).
+
+## Related Entities
+
+- Tabel existing Mangkasir vs entitas target Eqiozmart (lihat tabel gap per modul §5).
+
 ## Related Database
+- [Database Design Eqiozmart v1 (Source of Truth)](DATABASE_DESIGN_Eqiozmart_v1.md)
 - [Conceptual Data Model](07_Conceptual_Data_Model.md)
 - [Logical Data Model](08_Logical_Data_Model.md)
 - [Physical Database Design](09_Physical_Database_Design.md)
+
+## Related API
+
+- N/A (dokumen analisis data, bukan kontrak API).
+
+## Related Screens
+
+- N/A.
+
+## Business Rules
+
+- Soft delete, identifier ganda (id/uuid), uang DECIMAL, `stock_movements` sebagai source of truth — lihat detail di [Database Design Eqiozmart v1](DATABASE_DESIGN_Eqiozmart_v1.md).
 
 ## References
 - `mpos.sql`, `mpos_transaction.sql` (dump Mangkasir, 2026-06-26)

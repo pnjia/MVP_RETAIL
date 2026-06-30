@@ -1,0 +1,735 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "domain_analysis_flow",
+        "label": "Domain Analysis Flow",
+        "nodes": [
+          "01_business_02_business_domain_analysis_file",
+          "01_business_03_business_process_mapping_file",
+          "01_business_05_functional_spesification_file",
+          "01_business_06_business_rules_and_state_machine_file"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "01_Business/02_Business_Domain_Analysis.md"
+      },
+      {
+        "id": "architecture_flow",
+        "label": "Architecture Flow",
+        "nodes": [
+          "02_architecture_04_bounded_context_and_domain_model_file",
+          "02_architecture_10_backend_architecture_file",
+          "02_architecture_12_frontend_architecture_file"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "02_Architecture/04_Bounded_Context_And_Domain_Model.md"
+      },
+      {
+        "id": "data_flow",
+        "label": "Data Flow",
+        "nodes": [
+          "03_data_07_conceptual_data_model_file",
+          "03_data_08_logical_data_model_file",
+          "03_data_09_physical_database_design_file"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.95,
+        "source_file": "03_Data/07_Conceptual_Data_Model.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "Graphify Knowledge Graph",
+      "file_type": "concept",
+      "source_file": ".agents/rules/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 4,
+      "norm_label": "graphify knowledge graph",
+      "id": "_agents_rules_graphify_graphify_knowledge_graph"
+    },
+    {
+      "label": "Graphify Workflow",
+      "file_type": "concept",
+      "source_file": ".agents/workflows/graphify.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "community": 4,
+      "norm_label": "graphify workflow",
+      "id": "_agents_workflows_graphify_graphify_workflow"
+    },
+    {
+      "label": "refactor.py",
+      "file_type": "code",
+      "source_file": "refactor.py",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "refactor",
+      "community": 16,
+      "norm_label": "refactor.py"
+    },
+    {
+      "label": "Product Vision and Scope Document",
+      "file_type": "document",
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "00_project_01_product_vision_and_scope_file",
+      "community": 1,
+      "norm_label": "product vision and scope document"
+    },
+    {
+      "label": "Architecture Principles",
+      "file_type": "rationale",
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "00_project_01_product_vision_and_scope_architecture_principles",
+      "community": 5,
+      "norm_label": "architecture principles"
+    },
+    {
+      "label": "Development Roadmap Document",
+      "file_type": "document",
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "00_project_17_development_roadmap_file",
+      "community": 0,
+      "norm_label": "development roadmap document"
+    },
+    {
+      "label": "Business Domain Analysis Document",
+      "file_type": "document",
+      "source_file": "01_Business/02_Business_Domain_Analysis.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "01_business_02_business_domain_analysis_file",
+      "community": 0,
+      "norm_label": "business domain analysis document"
+    },
+    {
+      "label": "Contact as Root Entity Rationale",
+      "file_type": "rationale",
+      "source_file": "01_Business/02_Business_Domain_Analysis.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "01_business_02_business_domain_analysis_contact_root_entity",
+      "community": 2,
+      "norm_label": "contact as root entity rationale"
+    },
+    {
+      "label": "Business Process Mapping Document",
+      "file_type": "document",
+      "source_file": "01_Business/03_Business_Process_Mapping.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "01_business_03_business_process_mapping_file",
+      "community": 0,
+      "norm_label": "business process mapping document"
+    },
+    {
+      "label": "Functional Specification Document",
+      "file_type": "document",
+      "source_file": "01_Business/05_Functional_Spesification.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "01_business_05_functional_spesification_file",
+      "community": 0,
+      "norm_label": "functional specification document"
+    },
+    {
+      "label": "Business Rules and State Machine Document",
+      "file_type": "document",
+      "source_file": "01_Business/06_Business_Rules_And_State_Machine.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "01_business_06_business_rules_and_state_machine_file",
+      "community": 1,
+      "norm_label": "business rules and state machine document"
+    },
+    {
+      "label": "Bounded Context and Domain Model Document",
+      "file_type": "document",
+      "source_file": "02_Architecture/04_Bounded_Context_And_Domain_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_04_bounded_context_and_domain_model_file",
+      "community": 3,
+      "norm_label": "bounded context and domain model document"
+    },
+    {
+      "label": "Contact as Root Aggregate",
+      "file_type": "rationale",
+      "source_file": "02_Architecture/04_Bounded_Context_And_Domain_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_04_bounded_context_and_domain_model_contact_root_aggregate",
+      "community": 2,
+      "norm_label": "contact as root aggregate"
+    },
+    {
+      "label": "Backend Architecture Document",
+      "file_type": "document",
+      "source_file": "02_Architecture/10_Backend_Architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_10_backend_architecture_file",
+      "community": 3,
+      "norm_label": "backend architecture document"
+    },
+    {
+      "label": "Modular Monolith with DDD",
+      "file_type": "rationale",
+      "source_file": "02_Architecture/10_Backend_Architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_10_backend_architecture_modular_monolith",
+      "community": 6,
+      "norm_label": "modular monolith with ddd"
+    },
+    {
+      "label": "Frontend Architecture Document",
+      "file_type": "document",
+      "source_file": "02_Architecture/12_Frontend_Architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_12_frontend_architecture_file",
+      "community": 8,
+      "norm_label": "frontend architecture document"
+    },
+    {
+      "label": "Feature First Structure",
+      "file_type": "rationale",
+      "source_file": "02_Architecture/12_Frontend_Architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "02_architecture_12_frontend_architecture_feature_first",
+      "community": 7,
+      "norm_label": "feature first structure"
+    },
+    {
+      "label": "Conceptual Data Model Document",
+      "file_type": "document",
+      "source_file": "03_Data/07_Conceptual_Data_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_07_conceptual_data_model_file",
+      "community": 1,
+      "norm_label": "conceptual data model document"
+    },
+    {
+      "label": "Contact as Unified Entity",
+      "file_type": "rationale",
+      "source_file": "03_Data/07_Conceptual_Data_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_07_conceptual_data_model_contact_entity",
+      "community": 2,
+      "norm_label": "contact as unified entity"
+    },
+    {
+      "label": "Logical Data Model Document",
+      "file_type": "document",
+      "source_file": "03_Data/08_Logical_Data_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_08_logical_data_model_file",
+      "community": 0,
+      "norm_label": "logical data model document"
+    },
+    {
+      "label": "Stock Movement as Source of Truth",
+      "file_type": "rationale",
+      "source_file": "03_Data/08_Logical_Data_Model.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_08_logical_data_model_stock_movement_source",
+      "community": 9,
+      "norm_label": "stock movement as source of truth"
+    },
+    {
+      "label": "Physical Database Design Document",
+      "file_type": "document",
+      "source_file": "03_Data/09_Physical_Database_Design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_09_physical_database_design_file",
+      "community": 0,
+      "norm_label": "physical database design document"
+    },
+    {
+      "label": "Dual Identifier Strategy",
+      "file_type": "rationale",
+      "source_file": "03_Data/09_Physical_Database_Design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "03_data_09_physical_database_design_dual_identifier",
+      "community": 10,
+      "norm_label": "dual identifier strategy"
+    },
+    {
+      "label": "API Contract Document",
+      "file_type": "document",
+      "source_file": "04_API/11_API_Contract.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "04_api_11_api_contract_file",
+      "community": 1,
+      "norm_label": "api contract document"
+    },
+    {
+      "label": "Information Architecture Document",
+      "file_type": "document",
+      "source_file": "05_UI/13_Information_Architecture.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "05_ui_13_information_architecture_file",
+      "community": 11,
+      "norm_label": "information architecture document"
+    },
+    {
+      "label": "UI Flow Document",
+      "file_type": "document",
+      "source_file": "05_UI/14_UI_FLOW.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "05_ui_14_ui_flow_file",
+      "community": 0,
+      "norm_label": "ui flow document"
+    },
+    {
+      "label": "Screen Specification Document",
+      "file_type": "document",
+      "source_file": "05_UI/15_Screen_Spesification.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "05_ui_15_screen_spesification_file",
+      "community": 12,
+      "norm_label": "screen specification document"
+    },
+    {
+      "label": "Design System Document",
+      "file_type": "document",
+      "source_file": "05_UI/16_Design_System.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "05_ui_16_design_system_file",
+      "community": 13,
+      "norm_label": "design system document"
+    },
+    {
+      "label": "UX Principles",
+      "file_type": "rationale",
+      "source_file": "05_UI/16_Design_System.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "05_ui_16_design_system_ux_principles",
+      "community": 14,
+      "norm_label": "ux principles"
+    },
+    {
+      "label": "README Document",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_file",
+      "community": 0,
+      "norm_label": "readme document"
+    },
+    {
+      "label": "Glossary Document",
+      "file_type": "document",
+      "source_file": "glossary.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "glossary_file",
+      "community": 15,
+      "norm_label": "glossary document"
+    }
+  ],
+  "links": [
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".agents/workflows/graphify.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "_agents_workflows_graphify_graphify_workflow",
+      "target": "_agents_rules_graphify_graphify_knowledge_graph"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "00_project_17_development_roadmap_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "01_business_02_business_domain_analysis_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "01_business_03_business_process_mapping_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "01_business_06_business_rules_and_state_machine_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "03_data_07_conceptual_data_model_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "03_data_09_physical_database_design_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/01_Product_Vision_And_Scope.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_01_product_vision_and_scope_file",
+      "target": "04_api_11_api_contract_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "01_business_02_business_domain_analysis_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "01_business_03_business_process_mapping_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "01_business_05_functional_spesification_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "03_data_08_logical_data_model_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "03_data_09_physical_database_design_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "00_Project/17_Development_Roadmap.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "00_project_17_development_roadmap_file",
+      "target": "04_api_11_api_contract_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "00_project_17_development_roadmap_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "01_business_02_business_domain_analysis_file"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "01_Business/02_Business_Domain_Analysis.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "01_business_02_business_domain_analysis_contact_root_entity",
+      "target": "02_architecture_04_bounded_context_and_domain_model_contact_root_aggregate"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "01_Business/02_Business_Domain_Analysis.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "01_business_02_business_domain_analysis_contact_root_entity",
+      "target": "03_data_07_conceptual_data_model_contact_entity"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "01_business_03_business_process_mapping_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "02_Architecture/10_Backend_Architecture.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "02_architecture_10_backend_architecture_file",
+      "target": "02_architecture_04_bounded_context_and_domain_model_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "02_architecture_04_bounded_context_and_domain_model_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "03_data_09_physical_database_design_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "04_api_11_api_contract_file"
+    },
+    {
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": null,
+      "weight": 1.0,
+      "source": "readme_file",
+      "target": "05_ui_14_ui_flow_file"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "domain_analysis_flow",
+      "label": "Domain Analysis Flow",
+      "nodes": [
+        "01_business_02_business_domain_analysis_file",
+        "01_business_03_business_process_mapping_file",
+        "01_business_05_functional_spesification_file",
+        "01_business_06_business_rules_and_state_machine_file"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "01_Business/02_Business_Domain_Analysis.md"
+    },
+    {
+      "id": "architecture_flow",
+      "label": "Architecture Flow",
+      "nodes": [
+        "02_architecture_04_bounded_context_and_domain_model_file",
+        "02_architecture_10_backend_architecture_file",
+        "02_architecture_12_frontend_architecture_file"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "02_Architecture/04_Bounded_Context_And_Domain_Model.md"
+    },
+    {
+      "id": "data_flow",
+      "label": "Data Flow",
+      "nodes": [
+        "03_data_07_conceptual_data_model_file",
+        "03_data_08_logical_data_model_file",
+        "03_data_09_physical_database_design_file"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "03_Data/07_Conceptual_Data_Model.md"
+    }
+  ],
+  "built_at_commit": "7de4926d9c158429ced01a0feb2c4b6a2341ed80"
+}

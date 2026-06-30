@@ -1,9 +1,9 @@
 ---
 id: database-design-eqiozmart
-title: Perancangan Database Eqiozmart v1 (Source of Truth)
-type: data
-parent: 03_Data
-tags: [database, erd, schema, source-of-truth, user-flow, ddl]
+title: Database Design Eqiozmart v1
+type: database
+parent: data-physical
+tags: database, schema, source-of-truth, ddl
 version: 1.0
 ---
 
@@ -128,17 +128,17 @@ Hadir di **semua** tabel master & transaksi (di spesifikasi per-tabel cukup ditu
 ```mermaid
 flowchart TD
     A[User isi form daftar] --> B[Kirim OTP ke email]
-    B --> C[(otp_verifications)]
-    C --> D{OTP valid & belum kadaluarsa?}
+    B --> C[otp_verifications]
+    C --> D{OTP valid dan belum kadaluarsa?}
     D -->|Tidak| B
-    D -->|Ya| E[Buat akun user, is_email_verified=1]
-    E --> F[(users)]
-    F --> G[Buat Business / tenant]
-    G --> H[(businesses)]
+    D -->|Ya| E[Buat akun user is_email_verified=1]
+    E --> F[users]
+    F --> G[Buat Business tenant]
+    G --> H[businesses]
     H --> I[Buat Outlet pertama]
-    I --> J[(outlets + user_has_outlet)]
-    J --> K[Seed role default + assign Owner ke user]
-    K --> L[(roles, user_roles)]
+    I --> J[outlets dan user_has_outlet]
+    J --> K[Seed role default assign Owner ke user]
+    K --> L[roles user_roles]
     L --> M[Dashboard siap]
 ```
 
@@ -190,7 +190,7 @@ flowchart TD
     G --> K{Semua item diterima?}
     K -->|Sebagian| L[PO status=partially_received]
     K -->|Penuh| M[PO status=received]
-    E -.barang rusak.-> R[(purchase_returns + items)]
+    E -.->|barang rusak| R[(purchase_returns + items)]
 ```
 
 ### 3.5 Penyesuaian / Opname Stok
@@ -209,7 +209,7 @@ flowchart LR
 flowchart LR
     A[Pilih invoice] --> B[Pilih item & qty diretur]
     B --> C[(sales_returns + items)]
-    C --> D[(stock_in type=RETURN) stok bertambah]
+    C --> D[("stock_in type=RETURN (stok bertambah)")]
     C --> E[(cash_transactions source=RETURN, kredit/refund)]
 ```
 
@@ -1502,11 +1502,441 @@ SET foreign_key_checks = 1;
 
 ---
 
+## 19. Modul Tambahan EQioZ POS
+
+> Ditambahkan agar skema mencakup **seluruh menu aplikasi EQioZ POS** (olshop, kredit, cashbox, produk jasa/paket, pengaturan harga, kontak staf/sales, printer & inbox). DDL ada di **Lampiran B**.
+
+### 19.A Modul Olshop (Online Shop)
+Tanggung jawab: etalase online, order masuk/keluar, banner, rekening & mutasinya, share link.
+
+| Tabel | Kolom inti | Relasi |
+|---|---|---|
+| `storefronts` | id, uuid, business_id (FK), name, slug (U), description, is_active | 1:N banners, online_orders, share_links |
+| `banners` | id, uuid, storefront_id (FK), image, link, position INT, is_active | — |
+| `online_orders` | id, uuid, storefront_id (FK), customer_id (FK), order_number (U), direction ENUM('in','out'), status ENUM('new','processed','shipped','completed','cancelled'), total_amount, shipping_address | 1:N online_order_items |
+| `online_order_items` | id, online_order_id (FK), product_id (FK), qty, price | — |
+| `store_accounts` | id, uuid, business_id (FK), bank_name, account_number, account_holder, is_active | 1:N store_account_mutations |
+| `store_account_mutations` | id, store_account_id (FK), type ENUM('debit','credit'), amount, description, mutation_date | "Mutasi" |
+| `share_links` | id, uuid, storefront_id (FK), link_code (U), description | "Share Olshop" |
+
+> Menu **Order Masuk/Keluar** = `online_orders.direction`. Saat order `completed`, integrasikan ke `transactions` (penjualan) via event.
+
+### 19.B Modul Kredit (Hutang–Piutang / AR–AP)
+Tanggung jawab: Piutang Penjualan, Hutang Pembelian, Piutang & Hutang Umum, beserta cicilan.
+
+| Tabel | Kolom inti | Ket |
+|---|---|---|
+| `receivables` | id, uuid, outlet_id (FK), customer_id (FK), source_type ENUM('sale','general'), reference_id, amount, paid_amount, due_date, status ENUM('open','partial','paid','overdue') | Piutang Penjualan/Umum |
+| `payables` | id, uuid, outlet_id (FK), supplier_id (FK), source_type ENUM('purchase','general'), reference_id, amount, paid_amount, due_date, status ENUM('open','partial','paid','overdue') | Hutang Pembelian/Umum |
+| `credit_payments` | id, credit_type ENUM('receivable','payable'), credit_id, amount, payment_date, method, note | cicilan/pelunasan |
+
+> `source_type='general'` = Piutang/Hutang Umum (tanpa dokumen jual/beli). `reference_id` menunjuk `transactions.id`/`purchase_orders.id` saat `sale`/`purchase`.
+
+### 19.C Modul Cashbox / Saldo
+Tanggung jawab: dompet kas multi-akun (Cashbox), Penambahan/Pengurangan/Pemindahan Saldo.
+
+| Tabel | Kolom inti | Ket |
+|---|---|---|
+| `cashboxes` | id, uuid, outlet_id (FK), name, type ENUM('cash','bank','ewallet'), balance DECIMAL(15,2) | dompet |
+| `cashbox_transactions` | id, cashbox_id (FK), type ENUM('in','out'), amount, description, trx_date, source | Tambah/Kurang Saldo |
+| `cashbox_transfers` | id, from_cashbox_id (FK), to_cashbox_id (FK), amount, transfer_date, note | Pemindahan Saldo |
+
+> `cash_transactions` mendapat kolom baru `cashbox_id` (FK→cashboxes, NULL) supaya kas penjualan masuk ke dompet tertentu.
+
+### 19.D Produk Jasa & Paket
+- `products` mendapat kolom **`type ENUM('barang','jasa','paket') DEFAULT 'barang'`**. Jasa ⇒ `is_use_stock=0`.
+- `product_bundles` *(komponen paket)*: id, bundle_product_id (FK→products), component_product_id (FK→products), qty DECIMAL(18,4). Stok paket dihitung dari komponennya.
+- **Pustaka Produk** = produk master tingkat business dengan `outlet_id` NULL (template yang bisa disalin ke outlet). Tidak perlu tabel baru; tandai via `products.is_library TINYINT(1) DEFAULT 0`.
+
+### 19.E Pengaturan Harga
+| Tabel | Kolom inti | Menu |
+|---|---|---|
+| `price_levels` | id, uuid, business_id (FK), name (Eceran/Grosir/Reseller) | Level Harga |
+| `product_price_levels` | id, product_id (FK), price_level_id (FK), price | Level Harga (nilai) |
+| `discount_promos` | id, uuid, outlet_id (FK), name, scope ENUM('product','global'), product_id (FK NULL), type ENUM('percent','nominal'), value, min_qty, start_date, end_date, is_active | Diskon Promo |
+| `discount_purchases` | id, uuid, outlet_id (FK), name, type ENUM('percent','nominal'), value, min_amount, start_date, end_date, is_active | Diskon Belanja |
+
+### 19.F Kontak: Staf & Sales
+| Tabel | Kolom inti | Menu |
+|---|---|---|
+| `employees` | id, uuid, business_id (FK), user_id (FK NULL), name, phone, position, salary DECIMAL(15,2) | Staf |
+| `salespersons` | id, uuid, business_id (FK), name, phone, commission_rate DECIMAL(5,2) | Sales |
+
+> `transactions` mendapat kolom **`salesperson_id` (FK→salespersons, NULL)** untuk Laporan Peringkat Sales. Customer & Supplier sudah ada (§8).
+
+### 19.G Pengaturan Aplikasi, Printer, Inbox, Kode Outlet
+| Tabel/Kolom | Kolom inti | Menu |
+|---|---|---|
+| `printers` | id, uuid, outlet_id (FK), name, connection_type ENUM('bluetooth','lan'), address, port, target ENUM('struk','invoice'), is_active | Pengaturan Printer |
+| `receipt_templates` | id, uuid, outlet_id (FK), target ENUM('struk','invoice'), header, footer, logo_path, signature_path, show_logo TINYINT(1) | Struk/Dokumen/TTD/Logo |
+| `inbox_messages` | id, uuid, user_id (FK), title, body, is_read TINYINT(1) | Inbox |
+| `outlets.code` *(kolom baru)* | VARCHAR(20) U | Kode Outlet |
+
+> Pengaturan key-value bebas lainnya (Menu Aplikasi, Pengaturan Sistem) tetap di `settings`. Reset Periode/Produk/Stok = operasi aplikasi, bukan tabel.
+
+### 19.H Flow Modul Baru
+
+**Order Olshop → Penjualan**
+```mermaid
+flowchart LR
+    A[Customer order via etalase] --> B[(online_orders status=new)]
+    B --> C[Penjual proses] --> D[status=processed/shipped]
+    D --> E{completed?}
+    E -->|Ya| F[("(transactions) + kurangi stok")]
+    E -->|Batal| G[status=cancelled]
+```
+
+**Penjualan Kredit → Piutang → Pelunasan**
+```mermaid
+flowchart LR
+    A[Checkout, bayar sebagian] --> B[(transactions)]
+    B --> C[(receivables status=open/partial)]
+    C --> D[Customer bayar cicilan]
+    D --> E[(credit_payments)]
+    E --> F{lunas?}
+    F -->|Ya| G[receivables status=paid]
+    F -->|Belum| C
+```
+
+**Pemindahan Saldo antar Cashbox**
+```mermaid
+flowchart LR
+    A[Pilih cashbox asal & tujuan] --> B[(cashbox_transfers)]
+    B --> C[cashbox asal balance −amount]
+    B --> D[cashbox tujuan balance +amount]
+```
+
+---
+
+## Lampiran B — DDL Modul Tambahan
+
+> Jalankan **setelah** Lampiran A. Berisi ALTER untuk tabel existing + CREATE tabel baru.
+
+```sql
+USE `eqiozmart`;
+SET foreign_key_checks = 0;
+
+-- ===== ALTER tabel existing =====
+ALTER TABLE `products`
+  ADD COLUMN `type` ENUM('barang','jasa','paket') NOT NULL DEFAULT 'barang' AFTER `name`,
+  ADD COLUMN `is_library` TINYINT(1) NOT NULL DEFAULT 0 AFTER `type`;
+ALTER TABLE `outlets`
+  ADD COLUMN `code` VARCHAR(20) DEFAULT NULL AFTER `name`,
+  ADD UNIQUE KEY `uk_outlets_code` (`code`);
+
+-- ===== PRODUK PAKET =====
+CREATE TABLE `product_bundles` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `bundle_product_id` BIGINT UNSIGNED NOT NULL,
+  `component_product_id` BIGINT UNSIGNED NOT NULL,
+  `qty` DECIMAL(18,4) NOT NULL,
+  PRIMARY KEY (`id`), KEY `idx_pb_bundle` (`bundle_product_id`),
+  CONSTRAINT `fk_pb_bundle` FOREIGN KEY (`bundle_product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pb_component` FOREIGN KEY (`component_product_id`) REFERENCES `products`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== PENGATURAN HARGA =====
+CREATE TABLE `price_levels` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(50) NOT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_plevel` (`business_id`,`name`),
+  CONSTRAINT `fk_plevel_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `product_price_levels` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `product_id` BIGINT UNSIGNED NOT NULL, `price_level_id` BIGINT UNSIGNED NOT NULL,
+  `price` DECIMAL(15,2) NOT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_ppl` (`product_id`,`price_level_id`),
+  CONSTRAINT `fk_ppl_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ppl_level` FOREIGN KEY (`price_level_id`) REFERENCES `price_levels`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `discount_promos` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(100) NOT NULL,
+  `scope` ENUM('product','global') NOT NULL DEFAULT 'global',
+  `product_id` BIGINT UNSIGNED DEFAULT NULL,
+  `type` ENUM('percent','nominal') NOT NULL, `value` DECIMAL(15,2) NOT NULL,
+  `min_qty` DECIMAL(18,4) DEFAULT 0, `start_date` DATE DEFAULT NULL, `end_date` DATE DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_promo_outlet` (`outlet_id`),
+  CONSTRAINT `fk_promo_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`),
+  CONSTRAINT `fk_promo_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `discount_purchases` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(100) NOT NULL,
+  `type` ENUM('percent','nominal') NOT NULL, `value` DECIMAL(15,2) NOT NULL,
+  `min_amount` DECIMAL(15,2) DEFAULT 0, `start_date` DATE DEFAULT NULL, `end_date` DATE DEFAULT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_dpur_outlet` (`outlet_id`),
+  CONSTRAINT `fk_dpur_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== KONTAK: STAF & SALES =====
+CREATE TABLE `employees` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL, `user_id` BIGINT UNSIGNED DEFAULT NULL,
+  `name` VARCHAR(100) NOT NULL, `phone` VARCHAR(20) DEFAULT NULL,
+  `position` VARCHAR(50) DEFAULT NULL, `salary` DECIMAL(15,2) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_emp_uuid` (`uuid`),
+  CONSTRAINT `fk_emp_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`),
+  CONSTRAINT `fk_emp_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `salespersons` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(100) NOT NULL,
+  `phone` VARCHAR(20) DEFAULT NULL, `commission_rate` DECIMAL(5,2) DEFAULT 0,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_sales_uuid` (`uuid`),
+  CONSTRAINT `fk_sales_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `transactions`
+  ADD COLUMN `salesperson_id` BIGINT UNSIGNED DEFAULT NULL AFTER `cashier_id`,
+  ADD CONSTRAINT `fk_tx_salesperson` FOREIGN KEY (`salesperson_id`) REFERENCES `salespersons`(`id`);
+
+-- ===== CASHBOX / SALDO =====
+CREATE TABLE `cashboxes` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(100) NOT NULL,
+  `type` ENUM('cash','bank','ewallet') NOT NULL DEFAULT 'cash',
+  `balance` DECIMAL(15,2) NOT NULL DEFAULT 0,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_cashbox_uuid` (`uuid`),
+  CONSTRAINT `fk_cashbox_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `cashbox_transactions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `cashbox_id` BIGINT UNSIGNED NOT NULL,
+  `type` ENUM('in','out') NOT NULL, `amount` DECIMAL(15,2) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL, `trx_date` DATE NOT NULL, `source` VARCHAR(50) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_cbt_cashbox` (`cashbox_id`),
+  CONSTRAINT `fk_cbt_cashbox` FOREIGN KEY (`cashbox_id`) REFERENCES `cashboxes`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `cashbox_transfers` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `from_cashbox_id` BIGINT UNSIGNED NOT NULL, `to_cashbox_id` BIGINT UNSIGNED NOT NULL,
+  `amount` DECIMAL(15,2) NOT NULL, `transfer_date` DATE NOT NULL, `note` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_cbtf_from` FOREIGN KEY (`from_cashbox_id`) REFERENCES `cashboxes`(`id`),
+  CONSTRAINT `fk_cbtf_to` FOREIGN KEY (`to_cashbox_id`) REFERENCES `cashboxes`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `cash_transactions`
+  ADD COLUMN `cashbox_id` BIGINT UNSIGNED DEFAULT NULL AFTER `outlet_id`,
+  ADD CONSTRAINT `fk_ct_cashbox` FOREIGN KEY (`cashbox_id`) REFERENCES `cashboxes`(`id`);
+
+-- ===== KREDIT (AR/AP) =====
+CREATE TABLE `receivables` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `customer_id` BIGINT UNSIGNED DEFAULT NULL,
+  `source_type` ENUM('sale','general') NOT NULL, `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+  `amount` DECIMAL(15,2) NOT NULL, `paid_amount` DECIMAL(15,2) NOT NULL DEFAULT 0,
+  `due_date` DATE DEFAULT NULL, `status` ENUM('open','partial','paid','overdue') NOT NULL DEFAULT 'open',
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_ar_outlet_status` (`outlet_id`,`status`),
+  CONSTRAINT `fk_ar_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`),
+  CONSTRAINT `fk_ar_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `payables` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `supplier_id` BIGINT UNSIGNED DEFAULT NULL,
+  `source_type` ENUM('purchase','general') NOT NULL, `reference_id` BIGINT UNSIGNED DEFAULT NULL,
+  `amount` DECIMAL(15,2) NOT NULL, `paid_amount` DECIMAL(15,2) NOT NULL DEFAULT 0,
+  `due_date` DATE DEFAULT NULL, `status` ENUM('open','partial','paid','overdue') NOT NULL DEFAULT 'open',
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_ap_outlet_status` (`outlet_id`,`status`),
+  CONSTRAINT `fk_ap_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`),
+  CONSTRAINT `fk_ap_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `credit_payments` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `credit_type` ENUM('receivable','payable') NOT NULL, `credit_id` BIGINT UNSIGNED NOT NULL,
+  `amount` DECIMAL(15,2) NOT NULL, `payment_date` DATE NOT NULL,
+  `method` VARCHAR(50) DEFAULT NULL, `note` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_cpay_credit` (`credit_type`,`credit_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== OLSHOP =====
+CREATE TABLE `storefronts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(150) NOT NULL,
+  `slug` VARCHAR(150) NOT NULL, `description` TEXT DEFAULT NULL, `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_storefront_uuid` (`uuid`), UNIQUE KEY `uk_storefront_slug` (`slug`),
+  CONSTRAINT `fk_storefront_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `banners` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `storefront_id` BIGINT UNSIGNED NOT NULL, `image` VARCHAR(255) NOT NULL,
+  `link` VARCHAR(255) DEFAULT NULL, `position` INT DEFAULT 0, `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `updated_at` DATETIME(6) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_banner_storefront` (`storefront_id`),
+  CONSTRAINT `fk_banner_storefront` FOREIGN KEY (`storefront_id`) REFERENCES `storefronts`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `online_orders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `storefront_id` BIGINT UNSIGNED NOT NULL, `customer_id` BIGINT UNSIGNED DEFAULT NULL,
+  `order_number` VARCHAR(50) NOT NULL, `direction` ENUM('in','out') NOT NULL DEFAULT 'in',
+  `status` ENUM('new','processed','shipped','completed','cancelled') NOT NULL DEFAULT 'new',
+  `total_amount` DECIMAL(15,2) NOT NULL DEFAULT 0, `shipping_address` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL, `created_by` VARCHAR(255) DEFAULT NULL,
+  `updated_at` DATETIME(6) DEFAULT NULL, `updated_by` VARCHAR(255) DEFAULT NULL,
+  `deleted_at` DATETIME(6) DEFAULT NULL, `deleted_by` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_oo_uuid` (`uuid`), UNIQUE KEY `uk_oo_number` (`order_number`),
+  KEY `idx_oo_storefront` (`storefront_id`),
+  CONSTRAINT `fk_oo_storefront` FOREIGN KEY (`storefront_id`) REFERENCES `storefronts`(`id`),
+  CONSTRAINT `fk_oo_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `online_order_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `online_order_id` BIGINT UNSIGNED NOT NULL, `product_id` BIGINT UNSIGNED NOT NULL,
+  `qty` DECIMAL(18,4) NOT NULL, `price` DECIMAL(15,2) NOT NULL,
+  PRIMARY KEY (`id`), KEY `idx_ooi_order` (`online_order_id`),
+  CONSTRAINT `fk_ooi_order` FOREIGN KEY (`online_order_id`) REFERENCES `online_orders`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ooi_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `store_accounts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `business_id` BIGINT UNSIGNED NOT NULL, `bank_name` VARCHAR(100) NOT NULL,
+  `account_number` VARCHAR(50) NOT NULL, `account_holder` VARCHAR(150) NOT NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `updated_at` DATETIME(6) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_sa_business` (`business_id`),
+  CONSTRAINT `fk_sa_business` FOREIGN KEY (`business_id`) REFERENCES `businesses`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `store_account_mutations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `store_account_id` BIGINT UNSIGNED NOT NULL,
+  `type` ENUM('debit','credit') NOT NULL, `amount` DECIMAL(15,2) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL, `mutation_date` DATE NOT NULL,
+  `created_at` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`id`), KEY `idx_sam_account` (`store_account_id`),
+  CONSTRAINT `fk_sam_account` FOREIGN KEY (`store_account_id`) REFERENCES `store_accounts`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `share_links` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `storefront_id` BIGINT UNSIGNED NOT NULL, `link_code` VARCHAR(50) NOT NULL,
+  `description` VARCHAR(255) DEFAULT NULL,
+  `created_at` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`id`), UNIQUE KEY `uk_sharelink_code` (`link_code`),
+  CONSTRAINT `fk_sharelink_storefront` FOREIGN KEY (`storefront_id`) REFERENCES `storefronts`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ===== SETTINGS TERSTRUKTUR / PRINTER / INBOX =====
+CREATE TABLE `printers` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `name` VARCHAR(100) NOT NULL,
+  `connection_type` ENUM('bluetooth','lan') NOT NULL, `address` VARCHAR(100) DEFAULT NULL,
+  `port` INT DEFAULT NULL, `target` ENUM('struk','invoice') NOT NULL DEFAULT 'struk',
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `updated_at` DATETIME(6) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_printer_outlet` (`outlet_id`),
+  CONSTRAINT `fk_printer_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `receipt_templates` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `outlet_id` BIGINT UNSIGNED NOT NULL, `target` ENUM('struk','invoice') NOT NULL DEFAULT 'struk',
+  `header` TEXT DEFAULT NULL, `footer` TEXT DEFAULT NULL,
+  `logo_path` VARCHAR(255) DEFAULT NULL, `signature_path` VARCHAR(255) DEFAULT NULL,
+  `show_logo` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME(6) NOT NULL, `updated_at` DATETIME(6) DEFAULT NULL,
+  PRIMARY KEY (`id`), KEY `idx_rt_outlet` (`outlet_id`),
+  CONSTRAINT `fk_rt_outlet` FOREIGN KEY (`outlet_id`) REFERENCES `outlets`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `inbox_messages` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, `uuid` CHAR(36) NOT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL, `title` VARCHAR(255) NOT NULL, `body` TEXT DEFAULT NULL,
+  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` DATETIME(6) NOT NULL,
+  PRIMARY KEY (`id`), KEY `idx_inbox_user` (`user_id`),
+  CONSTRAINT `fk_inbox_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET foreign_key_checks = 1;
+```
+
+---
+
+## Summary
+
+Dokumen ini adalah **source of truth skema database Eqiozmart**: gabungan basis Mangkasir (`mpos`+`mpos_transaction`) yang diperbarui untuk memenuhi spec Eqiozmart **dan** seluruh menu aplikasi EQioZ POS. Mencakup 10 modul inti (Lampiran A) + 7 modul tambahan EQioZ POS (Lampiran B): Olshop, Kredit/AR-AP, Cashbox, Produk Jasa/Paket, Pengaturan Harga, Kontak Staf/Sales, serta Printer/Inbox/Kode Outlet. Total ~70 tabel, MariaDB/MySQL single-database, multi-tenant `business → outlet`.
+
+## Related Domains
+
+- Identity, Organization, Product, CRM, Purchase, Inventory, Sales, Finance, Online Shop (Olshop), Credit (AR/AP) — lihat [Bounded Context](../02_Architecture/04_Bounded_Context_And_Domain_Model.md).
+
+## Related Processes
+
+- Checkout/Penjualan, Pembelian (PO→Receiving), Retur, Opname Stok, Penjualan Kredit→Piutang, Order Olshop→Penjualan, Pemindahan Saldo Cashbox — lihat [Business Process Mapping](../01_Business/03_Business_Process_Mapping.md).
+
+## Related Entities
+
+- Seluruh entitas pada §5–§13 dan §19 (users, businesses, outlets, products, transactions, purchase_orders, stock_movements, receivables, payables, cashboxes, online_orders, dll). Selaras dengan [Conceptual Data Model](07_Conceptual_Data_Model.md).
+
 ## Related Database
+
 - [Analisis Gap Mangkasir vs Eqiozmart](DB_GAP_ANALYSIS_Mangkasir_vs_Eqiozmart.md)
 - [Conceptual Data Model](07_Conceptual_Data_Model.md)
 - [Logical Data Model](08_Logical_Data_Model.md)
 - [Physical Database Design](09_Physical_Database_Design.md)
+
+## Related API
+
+- Endpoint hanya mengekspos `uuid`, tidak pernah `id` internal — lihat [API Contract](../04_API/11_API_Contract.md).
+
+## Related Screens
+
+- Menu EQioZ POS: Penjualan, Pembelian, Retur, Olshop (Order/Banner/Share), Data Produk (Barang/Jasa/Paket), Persediaan, Pengaturan Harga, Cashbox, Data Kontak, Data Kredit, Laporan, Pengaturan Aplikasi/Printer/Akun — lihat [UI Flow](../05_UI/14_UI_FLOW.md).
+
+## Business Rules
+
+- Setiap tabel punya `id` (BIGINT, internal) dan `uuid` (publik).
+- Uang = DECIMAL(15,2); quantity = DECIMAL(18,4); tidak boleh FLOAT/DOUBLE.
+- `stock_movements` = source of truth inventori; `stocks`/`products.qty` = proyeksi.
+- Isolasi multi-tenant via `business_id`/`outlet_id` ditegakkan di lapisan aplikasi.
+- Checkout & receiving berjalan dalam satu DB transaction (atomik).
+- Soft delete via `deleted_at` (NULL = aktif).
+- Password wajib di-hash (Argon2/bcrypt).
 
 ## References
 - `mpos.sql`, `mpos_transaction.sql` (dump Mangkasir, 2026-06-26)

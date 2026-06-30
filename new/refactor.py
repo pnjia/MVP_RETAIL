@@ -15,6 +15,8 @@ files_metadata = {
     "03_Data/07_Conceptual_Data_Model.md": {"id": "data-conceptual", "title": "Conceptual Data Model", "type": "entity", "parent": "architecture-bounded-context", "tags": "data, conceptual", "version": "1.0"},
     "03_Data/08_Logical_Data_Model.md": {"id": "data-logical", "title": "Logical Data Model", "type": "database", "parent": "data-conceptual", "tags": "data, logical", "version": "1.0"},
     "03_Data/09_Physical_Database_Design.md": {"id": "data-physical", "title": "Physical Database Design", "type": "database", "parent": "data-logical", "tags": "database, physical", "version": "1.0"},
+    "03_Data/DB_GAP_ANALYSIS_Mangkasir_vs_Eqiozmart.md": {"id": "db-gap-analysis", "title": "DB Gap Analysis Mangkasir vs Eqiozmart", "type": "database", "parent": "data-physical", "tags": "database, gap-analysis, mpos", "version": "1.0"},
+    "03_Data/DATABASE_DESIGN_Eqiozmart_v1.md": {"id": "database-design-eqiozmart", "title": "Database Design Eqiozmart v1", "type": "database", "parent": "data-physical", "tags": "database, schema, source-of-truth, ddl", "version": "1.0"},
     "04_API/11_API_Contract.md": {"id": "api-contract", "title": "API Contract", "type": "api", "parent": "architecture-backend", "tags": "api, contract", "version": "1.0"},
     "05_UI/13_Information_Architecture.md": {"id": "ui-information-architecture", "title": "Information Architecture", "type": "ui", "parent": "architecture-frontend", "tags": "ui, ia", "version": "1.0"},
     "05_UI/14_UI_FLOW.md": {"id": "ui-flow", "title": "UI FLOW", "type": "ui", "parent": "ui-information-architecture", "tags": "ui, flow", "version": "1.0"},
